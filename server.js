@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 
 const { quotes } = require('./data');
-const { getRandomElement } = require('./utils');
+const { getRandomElement, getElementById, getIndexById, createQuote } = require('./utils');
 
 const PORT = process.env.PORT || 4001;
 app.use(express.static('public'));
@@ -14,6 +14,15 @@ app.listen(PORT, () =>{
 app.get('/api/quotes/random', (req, res, next) => {
     const randomQuote = {quote: getRandomElement(quotes)};
     res.send(randomQuote);
+});
+
+app.get('/api/quotes/:id', (req, res, next) => {
+    const quote = getElementById(req.params.id);
+    if (!quote){
+        res.status(404).send();
+    } else {
+        res.send(quote);
+    }
 });
 
 //send the full array of quotes if no person was given. Otherwise give an array of quotes from that person
@@ -38,14 +47,29 @@ app.post('/api/quotes', (req, res, next) => {
     if (!req.query.quote || !req.query.person){
         res.status(400).send();
     } else {
-        const newQuote = req.query.quote;
-        const newPerson = req.query.person;
-        const newQuoteObject = {quote: newQuote, person: newPerson};
+        const newQuoteObject = createQuote(req.query.quote, req.query.person);
         quotes.push(newQuoteObject);
         res.send({quote: newQuoteObject});
     }
 });
 
-app.put('/api/quotes', (req, res, next) => {
-    
+app.put('/api/quotes/:id', (req, res, next) => {
+    const quoteIndex = getIndexById(req.params.id);
+    if (quoteIndex === -1){
+        res.status(404).send()
+    } else {
+        const replacementQuote = {id: Number(req.params.id), quote: req.query.quote, person: req.query.person};
+        quotes[quoteIndex] = replacementQuote;
+        res.send(replacementQuote);
+        }
+    });
+
+app.delete('/api/quotes/:id', (req, res, next) => {
+    const quoteIndex = getIndexById(req.params.id);
+    if (quoteIndex === -1){
+        res.status(404).send()
+    } else {
+        quotes.splice(quoteIndex, 1);
+        res.status(204).send();
+    }
 });
